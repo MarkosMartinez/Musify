@@ -25,9 +25,12 @@ import 'package:musify/API/musify.dart';
 import 'package:musify/extensions/l10n.dart';
 import 'package:musify/main.dart';
 import 'package:musify/screens/search_page.dart';
+import 'package:musify/screens/spotify_login_page.dart';
+import 'package:musify/screens/spotify_playlists_page.dart';
 import 'package:musify/services/data_manager.dart';
 import 'package:musify/services/router_service.dart';
 import 'package:musify/services/settings_manager.dart';
+import 'package:musify/services/spotify_service.dart';
 import 'package:musify/services/update_manager.dart';
 import 'package:musify/style/app_colors.dart';
 import 'package:musify/style/app_themes.dart';
@@ -199,8 +202,60 @@ class SettingsPage extends StatelessWidget {
     Color inactivatedColor,
     Color primaryColor,
   ) {
+    final spotifyService = SpotifyService();
+    
     return Column(
       children: [
+        SectionHeader(title: 'Spotify Integration'),
+        ValueListenableBuilder<bool>(
+          valueListenable: spotifyService.isLoggedInNotifier,
+          builder: (_, isLoggedIn, __) {
+            return CustomBar(
+              isLoggedIn ? 'Spotify Account' : 'Login to Spotify',
+              FluentIcons.music_note_2_24_filled,
+              borderRadius: commonCustomBarRadiusFirst,
+              onTap: () async {
+                if (isLoggedIn) {
+                  _showSpotifyAccountOptions(context);
+                } else {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SpotifyLoginPage(),
+                    ),
+                  );
+                  if (result == true) {
+                    showToast(context, 'Successfully logged in to Spotify!');
+                  }
+                }
+              },
+              trailing: isLoggedIn
+                  ? Icon(
+                      FluentIcons.checkmark_circle_24_filled,
+                      color: primaryColor,
+                    )
+                  : null,
+            );
+          },
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: spotifyService.isLoggedInNotifier,
+          builder: (_, isLoggedIn, __) {
+            if (!isLoggedIn) return const SizedBox.shrink();
+            return CustomBar(
+              'Spotify Playlists',
+              FluentIcons.music_note_2_play_20_filled,
+              borderRadius: commonCustomBarRadiusLast,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SpotifyPlaylistsPage(),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 10),
         ValueListenableBuilder<bool>(
           valueListenable: sponsorBlockSupport,
           builder: (_, value, __) {
@@ -728,5 +783,40 @@ class SettingsPage extends StatelessWidget {
     );
     final response = await backupData(context);
     showToast(context, response);
+  }
+
+  void _showSpotifyAccountOptions(BuildContext context) {
+    final spotifyService = SpotifyService();
+    showCustomBottomSheet(
+      context,
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BottomSheetBar(
+            'View Playlists',
+            () {
+              Navigator.pop(context);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SpotifyPlaylistsPage(),
+                ),
+              );
+            },
+            Theme.of(context).colorScheme.secondaryContainer,
+            borderRadius: commonCustomBarRadiusFirst,
+          ),
+          BottomSheetBar(
+            'Logout',
+            () async {
+              Navigator.pop(context);
+              await spotifyService.logout();
+              showToast(context, 'Logged out from Spotify');
+            },
+            Theme.of(context).colorScheme.surfaceContainerHigh,
+            borderRadius: commonCustomBarRadiusLast,
+          ),
+        ],
+      ),
+    );
   }
 }

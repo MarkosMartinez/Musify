@@ -26,6 +26,7 @@ import 'package:musify/extensions/l10n.dart';
 import 'package:musify/services/playlist_download_service.dart';
 import 'package:musify/services/router_service.dart';
 import 'package:musify/services/settings_manager.dart';
+import 'package:musify/services/spotify_service.dart';
 import 'package:musify/utilities/common_variables.dart';
 import 'package:musify/utilities/flutter_toast.dart';
 import 'package:musify/utilities/playlist_image_picker.dart';
@@ -57,8 +58,10 @@ class _LibraryPageState extends State<LibraryPage> {
               child: Column(
                 children: <Widget>[
                   _buildUserPlaylistsSection(primaryColor),
-                  if (!offlineMode.value)
+                  if (!offlineMode.value) ...[
+                    _buildSpotifyPlaylistsSection(primaryColor),
                     _buildUserLikedPlaylistsSection(primaryColor),
+                  ],
                 ],
               ),
             ),
@@ -205,6 +208,30 @@ class _LibraryPageState extends State<LibraryPage> {
             },
           ),
       ],
+    );
+  }
+
+  Widget _buildSpotifyPlaylistsSection(Color primaryColor) {
+    final spotifyService = SpotifyService();
+    return ValueListenableBuilder<bool>(
+      valueListenable: spotifyService.isLoggedInNotifier,
+      builder: (context, isLoggedIn, _) {
+        if (!isLoggedIn) return const SizedBox.shrink();
+        
+        return ValueListenableBuilder<List<Map<String, dynamic>>>(
+          valueListenable: spotifyService.spotifyPlaylistsNotifier,
+          builder: (context, playlists, _) {
+            if (playlists.isEmpty) return const SizedBox.shrink();
+            
+            return Column(
+              children: [
+                SectionTitle('Spotify Playlists', primaryColor),
+                _buildPlaylistListView(context, playlists),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
