@@ -26,6 +26,7 @@ Unlock the full potential of music: Stream effortlessly with one app!
 <center>
 
 Online song search with suggestions <br/>
+Spotify integration with playlist sync <br/>
 Offline listening support <br/>
 Import & export your data and never lose it <br/>
 Add custom playlists with link <br/>
@@ -40,6 +41,47 @@ Material UI & accent colors & dynamic colors (Android 12+) <br/>
 
 </center>
 
+
+---
+
+## Spotify Integration
+
+Musify now supports logging in with your Spotify account to access and sync your playlists!
+
+### How to Login
+
+1. Go to **Settings** → **Spotify Integration** → **Login to Spotify**
+2. Choose one of two methods:
+   - **WebView Login**: Log in through the built-in browser (cookies are captured automatically)
+   - **Manual Entry**: Enter your Spotify cookies manually
+
+### Getting Spotify Cookies (Manual Method)
+
+If you prefer manual entry or the WebView doesn't work:
+
+1. Open [Spotify Web Player](https://open.spotify.com) in your browser
+2. Log in to your account
+3. Open Developer Tools (F12)
+4. Go to **Application/Storage** → **Cookies** → `https://open.spotify.com`
+5. Find and copy these cookies:
+   - `sp_dc` (Required)
+   - `sp_key` (Optional, but recommended)
+6. Paste them into Musify
+
+### Features
+
+- View all your Spotify playlists in Musify
+- Play songs from your Spotify playlists
+- **Bidirectional Sync**: Changes made in Musify automatically sync to Spotify
+  - Add songs to Spotify playlists → Updates in Spotify
+  - Remove songs from Spotify playlists → Updates in Spotify
+- Secure credential storage
+
+### Notes
+
+- This feature uses unofficial Spotify Web API methods (similar to Spotube)
+- No official Spotify API access required
+- Your credentials are stored securely on your device
 
 ---
 
