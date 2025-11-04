@@ -128,6 +128,13 @@ class SpotifyService {
     return null;
   }
 
+  String? _getImageUrl(dynamic images) {
+    if (images != null && images is List && images.isNotEmpty) {
+      return images[0]['url'] as String?;
+    }
+    return null;
+  }
+
   Future<List<Map<String, dynamic>>> getUserPlaylists() async {
     if (!_isLoggedIn) return [];
 
@@ -150,9 +157,7 @@ class SpotifyService {
               'id': item['id'],
               'title': item['name'],
               'description': item['description'] ?? '',
-              'image': item['images'] != null && item['images'].isNotEmpty
-                  ? item['images'][0]['url']
-                  : '',
+              'image': _getImageUrl(item['images']) ?? '',
               'owner': item['owner']['display_name'] ?? '',
               'tracks_total': item['tracks']?['total'] ?? 0,
               'is_spotify': true,
@@ -193,17 +198,17 @@ class SpotifyService {
             if (item['track'] == null) continue;
             final track = item['track'];
 
+            final artists = track['artists'];
+            final artistName = artists != null && artists is List && artists.isNotEmpty
+                ? artists[0]['name']
+                : '';
+
             tracks.add({
               'id': track['id'],
               'title': track['name'],
-              'artist': track['artists'] != null && track['artists'].isNotEmpty
-                  ? track['artists'][0]['name']
-                  : '',
+              'artist': artistName,
               'album': track['album']?['name'] ?? '',
-              'image': track['album']?['images'] != null &&
-                      track['album']['images'].isNotEmpty
-                  ? track['album']['images'][0]['url']
-                  : '',
+              'image': _getImageUrl(track['album']?['images']) ?? '',
               'duration': track['duration_ms'] ?? 0,
               'uri': track['uri'],
             });
@@ -265,11 +270,26 @@ class SpotifyService {
     }
   }
 
+  String _buildSearchQuery(String title, String artist) {
+    // Remove special characters that might interfere with search
+    final cleanTitle = title.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+    final cleanArtist = artist.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+    
+    // Build query with proper formatting
+    final parts = <String>[];
+    if (cleanTitle.isNotEmpty) parts.add('track:$cleanTitle');
+    if (cleanArtist.isNotEmpty) parts.add('artist:$cleanArtist');
+    
+    return parts.join(' ');
+  }
+
   Future<String?> searchTrack(String title, String artist) async {
     if (!_isLoggedIn) return null;
 
     try {
-      final query = '$title $artist'.trim();
+      final query = _buildSearchQuery(title, artist);
+      if (query.isEmpty) return null;
+
       final encodedQuery = Uri.encodeComponent(query);
       final response = await http.get(
         Uri.parse('$_spotifyApiBase/search?q=$encodedQuery&type=track&limit=1'),

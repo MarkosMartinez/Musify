@@ -176,8 +176,12 @@ class _SpotifyLoginPageState extends State<SpotifyLoginPage> {
             'To get your cookies:\n'
             '1. Login to Spotify on your browser\n'
             '2. Open Developer Tools (F12)\n'
-            '3. Go to Application/Storage > Cookies\n'
-            '4. Find and copy sp_dc (required) and sp_key (optional)',
+            '3. Go to:\n'
+            '   • Chrome/Edge: Application > Cookies\n'
+            '   • Firefox: Storage > Cookies\n'
+            '   • Safari: Storage > Cookies\n'
+            '4. Select https://open.spotify.com\n'
+            '5. Find and copy sp_dc (required) and sp_key (optional)',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
