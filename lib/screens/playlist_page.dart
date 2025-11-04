@@ -552,8 +552,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
       context,
       context.l10n!.songRemoved,
       context.l10n!.undo.toUpperCase(),
-      () {
-        addSongInCustomPlaylist(
+      () async {
+        await addSongInCustomPlaylist(
           context,
           _playlist['title'],
           songToRemove,
@@ -629,13 +629,14 @@ class _PlaylistPageState extends State<PlaylistPage> {
       song,
       true,
       onRemove: isRemovable
-          ? () => {
-              if (removeSongFromPlaylist(
+          ? () async {
+              if (await removeSongFromPlaylist(
                 _playlist,
                 song,
                 removeOneAtIndex: index,
-              ))
-                {_updateSongsListOnRemove(index)},
+              )) {
+                _updateSongsListOnRemove(index);
+              }
             }
           : null,
       onPlay: () => {

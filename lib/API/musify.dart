@@ -36,6 +36,7 @@ import 'package:musify/services/io_service.dart';
 import 'package:musify/services/lyrics_manager.dart';
 import 'package:musify/services/proxy_manager.dart';
 import 'package:musify/services/settings_manager.dart';
+import 'package:musify/services/spotify_service.dart';
 import 'package:musify/utilities/flutter_toast.dart';
 import 'package:musify/utilities/formatter.dart';
 import 'package:musify/utilities/utils.dart';
@@ -250,12 +251,12 @@ String createCustomPlaylist(
   return '${context.l10n!.addedSuccess}!';
 }
 
-String addSongInCustomPlaylist(
+Future<String> addSongInCustomPlaylist(
   BuildContext context,
   String playlistName,
   Map song, {
   int? indexToInsert,
-}) {
+}) async {
   final customPlaylist = userCustomPlaylists.value.firstWhere(
     (playlist) => playlist['title'] == playlistName,
     orElse: () => null,
@@ -272,6 +273,12 @@ String addSongInCustomPlaylist(
         ? playlistSongs.insert(indexToInsert, song)
         : playlistSongs.add(song);
     addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+    
+    // Sync with Spotify if this is a Spotify playlist
+    if (customPlaylist['is_spotify'] == true) {
+      await _syncSongAddToSpotify(customPlaylist, song);
+    }
+    
     return context.l10n!.songAdded;
   } else {
     logger.log('Custom playlist not found: $playlistName', null, null);
@@ -279,11 +286,32 @@ String addSongInCustomPlaylist(
   }
 }
 
-bool removeSongFromPlaylist(
+Future<void> _syncSongAddToSpotify(Map playlist, Map song) async {
+  try {
+    final spotifyService = SpotifyService();
+    if (!spotifyService.isLoggedIn) return;
+    
+    final playlistId = playlist['id'] as String?;
+    if (playlistId == null) return;
+    
+    // Search for the track on Spotify
+    final title = song['title'] ?? '';
+    final artist = song['artist'] ?? song['more_info']?['singers'] ?? '';
+    final trackUri = await spotifyService.searchTrack(title, artist);
+    
+    if (trackUri != null) {
+      await spotifyService.addTrackToPlaylist(playlistId, trackUri);
+    }
+  } catch (e) {
+    logger.log('Error syncing song add to Spotify', e);
+  }
+}
+
+Future<bool> removeSongFromPlaylist(
   Map playlist,
   Map songToRemove, {
   int? removeOneAtIndex,
-}) {
+}) async {
   try {
     if (playlist['list'] == null) return false;
 
@@ -307,6 +335,11 @@ bool removeSongFromPlaylist(
       } else {
         addOrUpdateData('user', 'playlists', userPlaylists.value);
       }
+      
+      // Sync with Spotify if this is a Spotify playlist
+      if (playlist['is_spotify'] == true) {
+        await _syncSongRemoveFromSpotify(playlist, songToRemove);
+      }
     } catch (e, stackTrace) {
       logger.log('Error saving playlist changes', e, stackTrace);
       return false;
@@ -316,6 +349,30 @@ bool removeSongFromPlaylist(
   } catch (e, stackTrace) {
     logger.log('Error while removing song from playlist: ', e, stackTrace);
     return false;
+  }
+}
+
+Future<void> _syncSongRemoveFromSpotify(Map playlist, Map song) async {
+  try {
+    final spotifyService = SpotifyService();
+    if (!spotifyService.isLoggedIn) return;
+    
+    final playlistId = playlist['id'] as String?;
+    if (playlistId == null) return;
+    
+    // Get the track URI if available, or search for it
+    String? trackUri = song['uri'] as String?;
+    if (trackUri == null) {
+      final title = song['title'] ?? '';
+      final artist = song['artist'] ?? song['more_info']?['singers'] ?? '';
+      trackUri = await spotifyService.searchTrack(title, artist);
+    }
+    
+    if (trackUri != null) {
+      await spotifyService.removeTrackFromPlaylist(playlistId, trackUri);
+    }
+  } catch (e) {
+    logger.log('Error syncing song removal to Spotify', e);
   }
 }
 

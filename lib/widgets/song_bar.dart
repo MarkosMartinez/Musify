@@ -540,15 +540,13 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
                       elevation: 0,
                       child: ListTile(
                         title: Text(playlist['title']),
-                        onTap: () {
-                          showToast(
+                        onTap: () async {
+                          final result = await addSongInCustomPlaylist(
                             context,
-                            addSongInCustomPlaylist(
-                              context,
-                              playlist['title'],
-                              song,
-                            ),
+                            playlist['title'],
+                            song,
                           );
+                          showToast(context, result);
                           Navigator.pop(context);
                         },
                       ),
